@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Flame Grill</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome for Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body {
+        background-color: var(--dark-bg);
+        color: var(--light-text);
+        padding-top: 80px; /* Space for navbar if we had one */
+      }
+
+      .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--dark-border);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .stat-card {
+        background-color: var(--dark-card);
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .stat-icon {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+
+      .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        font-family: var(--font-heading);
+        margin: 0.5rem 0;
+        color: var(--light-heading);
+      }
+
+      .stat-label {
+        font-size: 1rem;
+        color: var(--light-text);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      #error-container {
+        display: none;
+        text-align: center;
+        padding: 5rem;
+      }
+
+      #dashboard-content {
+        display: none; /* Hidden until authenticated */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <div id="error-container">
+        <i
+          class="fa-solid fa-lock"
+          style="
+            font-size: 4rem;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+          "
+        ></i>
+        <h2>Access Denied</h2>
+        <p>You must be logged in to view this page.</p>
+        <a href="/login.html" class="btn btn-primary mt-4">Go to Login</a>
+      </div>
+
+      <div id="dashboard-content">
+        <div class="dashboard-header">
+          <h2>
+            <i
+              class="fa-solid fa-chart-line"
+              style="color: var(--primary-color)"
+            ></i>
+            Restaurant Dashboard
+          </h2>
+          <button id="logout-btn" class="btn btn-outline">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+
+        <div class="stats-grid" id="stats-container">
+          <!-- Stats will be loaded here dynamically -->
+          <div class="stat-card">
+            <i class="fa-solid fa-spinner fa-spin stat-icon"></i>
+            <p>Loading data...</p>
+          </div>
+        </div>
+
+        <div
+          style="
+            background-color: var(--dark-card);
+            padding: 2rem;
+            border-radius: 12px;
+          "
+        >
+          <h3>Recent Activity</h3>
+          <p style="color: var(--light-text); margin-top: 1rem">
+            No recent activity to display.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const errorContainer = document.getElementById("error-container");
+        const dashboardContent = document.getElementById("dashboard-content");
+        const statsContainer = document.getElementById("stats-container");
+
+        try {
+          // Fetch dashboard data
+          const response = await fetch("/api/dashboard-data");
+
+          if (response.status === 401) {
+            // Not authenticated
+            errorContainer.style.display = "block";
+            // Optional: Redirect immediately
+            // window.location.href = '/login.html';
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Show dashboard
+            dashboardContent.style.display = "block";
+
+            // Populate stats
+            const stats = data.stats;
+            statsContainer.innerHTML = `
+                        <div class="stat-card">
+                            <i class="fa-solid fa-burger stat-icon"></i>
+                            <div class="stat-value">${stats.totalOrders}</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fa-solid fa-dollar-sign stat-icon"></i>
+                            <div class="stat-value">${stats.revenue}</div>
+                            <div class="stat-label">Revenue</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fa-solid fa-users stat-icon"></i>
+                            <div class="stat-value">${stats.activeUsers}</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fa-solid fa-envelope stat-icon"></i>
+                            <div class="stat-value">${stats.pendingMessages}</div>
+                            <div class="stat-label">Messages</div>
+                        </div>
+                    `;
+          }
+        } catch (err) {
+          console.error("Error loading dashboard:", err);
+          errorContainer.style.display = "block";
+          errorContainer.innerHTML =
+            "<h2>Error loading dashboard data.</h2><p>Please ensure the server is running correctly.</p>";
+        }
+
+        // Handle Logout
+        document
+          .getElementById("logout-btn")
+          .addEventListener("click", async () => {
+            try {
+              await fetch("/api/logout", { method: "POST" });
+              window.location.href = "/login.html";
+            } catch (err) {
+              console.error("Logout error:", err);
+            }
+          });
+      });
+    </script>
+  </body>
+</html>
